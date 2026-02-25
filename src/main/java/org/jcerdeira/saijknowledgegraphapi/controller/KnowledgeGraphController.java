@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
  * </p>
  */
 @RestController
-@RequestMapping("/api/concepts")
+@RequestMapping("/api/v1/concepts")
 public class KnowledgeGraphController {
 
     private final KnowledgeGraphService knowledgeGraphService;
