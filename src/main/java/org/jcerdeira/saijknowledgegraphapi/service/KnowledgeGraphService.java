@@ -8,6 +8,7 @@ import org.apache.jena.tdb2.TDB2Factory;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.SKOS;
 import org.jcerdeira.saijknowledgegraphapi.model.ConceptDTO;
+import org.jcerdeira.saijknowledgegraphapi.model.ConceptReference;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -183,12 +184,21 @@ public class KnowledgeGraphService {
         ParameterizedSparqlString pss = new ParameterizedSparqlString();
         pss.setCommandText(
                 "PREFIX skos: <http://www.w3.org/2004/02/skos/core#> " +
-                        "SELECT ?label ?altLabel ?broader ?narrower ?related ?source WHERE { " +
+                        "SELECT ?label ?altLabel ?broader ?broaderLabel ?narrower ?narrowerLabel ?related ?relatedLabel ?source WHERE { " +
                         "  ?targetUri skos:prefLabel ?label . " +
                         "  OPTIONAL { ?targetUri skos:altLabel ?altLabel } " +
-                        "  OPTIONAL { ?targetUri skos:broader ?broader } " +
-                        "  OPTIONAL { ?targetUri skos:narrower ?narrower } " +
-                        "  OPTIONAL { ?targetUri skos:related ?related } " +
+                        "  OPTIONAL { " +
+                        "    ?targetUri skos:broader ?broader . " +
+                        "    ?broader skos:prefLabel ?broaderLabel . " +
+                        "  } " +
+                        "  OPTIONAL { " +
+                        "    ?targetUri skos:narrower ?narrower . " +
+                        "    ?narrower skos:prefLabel ?narrowerLabel . " +
+                        "  } " +
+                        "  OPTIONAL { " +
+                        "    ?targetUri skos:related ?related . " +
+                        "    ?related skos:prefLabel ?relatedLabel . " +
+                        "  } " +
                         "  OPTIONAL { ?targetUri skos:exactMatch ?source } " +
                         "}");
         
@@ -215,11 +225,11 @@ public class KnowledgeGraphService {
             if (!rs.hasNext()) return Optional.empty();
 
             String label = "";
-            String broader = null;
+            ConceptReference broader = null;
             String source = null;
             List<String> synonyms = new ArrayList<>();
-            List<String> narrower = new ArrayList<>();
-            List<String> related = new ArrayList<>();
+            List<ConceptReference> narrower = new ArrayList<>();
+            List<ConceptReference> related = new ArrayList<>();
 
             while (rs.hasNext()) {
                 QuerySolution soln = rs.nextSolution();
@@ -230,15 +240,21 @@ public class KnowledgeGraphService {
                     if (!synonyms.contains(val)) synonyms.add(val);
                 }
                 if (soln.contains("narrower")) {
-                    String val = soln.getResource("narrower").getURI();
-                    if (!narrower.contains(val)) narrower.add(val);
+                    String uri = soln.getResource("narrower").getURI();
+                    String lbl = soln.getLiteral("narrowerLabel").getString();
+                    ConceptReference ref = new ConceptReference(uri, lbl);
+                    if (!narrower.contains(ref)) narrower.add(ref);
                 }
                 if (soln.contains("related")) {
-                    String val = soln.getResource("related").getURI();
-                    if (!related.contains(val)) related.add(val);
+                    String uri = soln.getResource("related").getURI();
+                    String lbl = soln.getLiteral("relatedLabel").getString();
+                    ConceptReference ref = new ConceptReference(uri, lbl);
+                    if (!related.contains(ref)) related.add(ref);
                 }
                 if (soln.contains("broader")) {
-                    broader = soln.getResource("broader").getURI();
+                    String uri = soln.getResource("broader").getURI();
+                    String lbl = soln.getLiteral("broaderLabel").getString();
+                    broader = new ConceptReference(uri, lbl);
                 }
                 if (soln.contains("source")) {
                     source = soln.getResource("source").getURI();
