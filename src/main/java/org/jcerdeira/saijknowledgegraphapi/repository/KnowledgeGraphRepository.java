@@ -4,12 +4,10 @@ import lombok.Getter;
 import org.apache.jena.query.*;
 import org.apache.jena.tdb2.TDB2Factory;
 import org.jcerdeira.saijknowledgegraphapi.model.ConceptDTO;
-import org.jcerdeira.saijknowledgegraphapi.model.ConceptReference;
+import org.jcerdeira.saijknowledgegraphapi.mapper.ConceptMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -22,16 +20,20 @@ public class KnowledgeGraphRepository {
     private final Dataset dataset;
 
     private final String myDomain;
+    private final ConceptMapper mapper;
 
     /**
      * Constructs the KnowledgeGraphRepository with necessary dependencies and configuration.
      *
      * @param myDomain       The base URI for the application's internal concept representation.
      * @param dataPath       The file system path where the TDB2 database is stored.
+     * @param mapper         The mapper to convert SPARQL results to DTOs.
      */
     public KnowledgeGraphRepository(@Value("${app.graph.domain}") String myDomain,
-                                    @Value("${app.graph.data-path}") String dataPath) {
+                                    @Value("${app.graph.data-path}") String dataPath,
+                                    ConceptMapper mapper) {
         this.myDomain = myDomain;
+        this.mapper = mapper;
         this.dataset = TDB2Factory.connectDataset(dataPath);
     }
 
@@ -71,63 +73,10 @@ public class KnowledgeGraphRepository {
         
         pss.setIri("targetUri", targetUri);
 
-        return dataset.calculateRead(() -> executeConceptQuery(pss.asQuery(), id, targetUri));
-    }
-
-    /**
-     * Executes the SPARQL query and maps the result set to a ConceptDTO.
-     * <p>
-     * Iterates through the ResultSet to aggregate multiple rows (caused by one-to-many relationships
-     * like synonyms or narrower concepts) into a single DTO object.
-     * </p>
-     *
-     * @param query     The SPARQL query to execute.
-     * @param id        The concept ID (used for DTO construction).
-     * @param targetUri The full URI of the concept (used for DTO construction).
-     * @return An Optional containing the populated ConceptDTO, or empty if no results found.
-     */
-    private Optional<ConceptDTO> executeConceptQuery(Query query, String id, String targetUri) {
-        try (QueryExecution qexec = QueryExecutionFactory.create(query, dataset)) {
-            ResultSet rs = qexec.execSelect();
-            if (!rs.hasNext()) return Optional.empty();
-
-            String label = "";
-            ConceptReference broader = null;
-            String source = null;
-            List<String> synonyms = new ArrayList<>();
-            List<ConceptReference> narrower = new ArrayList<>();
-            List<ConceptReference> related = new ArrayList<>();
-
-            while (rs.hasNext()) {
-                QuerySolution soln = rs.nextSolution();
-                label = soln.getLiteral("label").getString();
-
-                if (soln.contains("altLabel")) {
-                    String val = soln.getLiteral("altLabel").getString();
-                    if (!synonyms.contains(val)) synonyms.add(val);
-                }
-                if (soln.contains("narrower")) {
-                    String uri = soln.getResource("narrower").getURI();
-                    String lbl = soln.getLiteral("narrowerLabel").getString();
-                    ConceptReference ref = new ConceptReference(uri, lbl);
-                    if (!narrower.contains(ref)) narrower.add(ref);
-                }
-                if (soln.contains("related")) {
-                    String uri = soln.getResource("related").getURI();
-                    String lbl = soln.getLiteral("relatedLabel").getString();
-                    ConceptReference ref = new ConceptReference(uri, lbl);
-                    if (!related.contains(ref)) related.add(ref);
-                }
-                if (soln.contains("broader")) {
-                    String uri = soln.getResource("broader").getURI();
-                    String lbl = soln.getLiteral("broaderLabel").getString();
-                    broader = new ConceptReference(uri, lbl);
-                }
-                if (soln.contains("source")) {
-                    source = soln.getResource("source").getURI();
-                }
+        return dataset.calculateRead(() -> {
+            try (QueryExecution qexec = QueryExecutionFactory.create(pss.asQuery(), dataset)) {
+                return mapper.mapToConceptDTO(qexec.execSelect(), id, targetUri);
             }
-            return Optional.of(new ConceptDTO(id, targetUri, label, synonyms, broader, narrower, related, source));
-        }
+        });
     }
 }
