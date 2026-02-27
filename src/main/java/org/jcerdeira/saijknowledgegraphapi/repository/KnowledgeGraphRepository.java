@@ -38,6 +38,15 @@ public class KnowledgeGraphRepository {
     private final String saijBase;
     private final String initialFile;
 
+    /**
+     * Constructs the KnowledgeGraphRepository with necessary dependencies and configuration.
+     *
+     * @param resourceLoader Spring ResourceLoader to load files from the classpath.
+     * @param myDomain       The base URI for the application's internal concept representation.
+     * @param saijBase       The base URI of the original SAIJ vocabulary.
+     * @param dataPath       The file system path where the TDB2 database is stored.
+     * @param initialFile    The path to the initial RDF/XML file to load if the database is empty.
+     */
     public KnowledgeGraphRepository(ResourceLoader resourceLoader,
                                     @Value("${app.graph.domain}") String myDomain,
                                     @Value("${app.graph.saij-base}") String saijBase,
@@ -50,6 +59,13 @@ public class KnowledgeGraphRepository {
         this.dataset = TDB2Factory.connectDataset(dataPath);
     }
 
+    /**
+     * Initializes the Knowledge Graph on application startup.
+     * <p>
+     * Checks if the TDB2 dataset is empty. If so, it loads the initial RDF/XML file,
+     * parses it, and triggers the graph refactoring process within a write transaction.
+     * </p>
+     */
     @PostConstruct
     public void init() {
         dataset.executeWrite(() -> {
@@ -69,6 +85,16 @@ public class KnowledgeGraphRepository {
         });
     }
 
+    /**
+     * Refactors the raw SAIJ graph into the internal domain model.
+     * <p>
+     * Iterates over all SKOS Concepts, creates new resources using the application's domain,
+     * links them to the original resources via 'exactMatch', and transforms relationships
+     * to point to the new domain URIs.
+     * </p>
+     *
+     * @param model The Jena Model containing the RDF data.
+     */
     private void refactorGraph(Model model) {
         Property exactMatch = model.createProperty(SKOS.uri + "exactMatch");
         List<Statement> newStatements = new ArrayList<>();
@@ -111,6 +137,16 @@ public class KnowledgeGraphRepository {
         model.add(newStatements);
     }
 
+    /**
+     * Extracts the unique identifier from a given URI string.
+     * <p>
+     * Attempts to parse the URI using UriComponentsBuilder to retrieve the 'skosTema' query parameter.
+     * Falls back to simple string manipulation if parsing fails.
+     * </p>
+     *
+     * @param uri The URI string to parse.
+     * @return The extracted ID, or null if extraction fails.
+     */
     private String extractIdFromUri(String uri) {
         try {
             return UriComponentsBuilder.fromUriString(uri)
@@ -125,6 +161,16 @@ public class KnowledgeGraphRepository {
         }
     }
 
+    /**
+     * Retrieves a concept by its unique identifier.
+     * <p>
+     * Constructs a parameterized SPARQL query to fetch the concept's details (labels, relations, source)
+     * and executes it within a read transaction.
+     * </p>
+     *
+     * @param id The unique identifier of the concept.
+     * @return An Optional containing the ConceptDTO if found, or empty otherwise.
+     */
     public Optional<ConceptDTO> getConceptById(String id) {
         String targetUri = myDomain + id;
 
@@ -154,6 +200,18 @@ public class KnowledgeGraphRepository {
         return dataset.calculateRead(() -> executeConceptQuery(pss.asQuery(), id, targetUri));
     }
 
+    /**
+     * Executes the SPARQL query and maps the result set to a ConceptDTO.
+     * <p>
+     * Iterates through the ResultSet to aggregate multiple rows (caused by one-to-many relationships
+     * like synonyms or narrower concepts) into a single DTO object.
+     * </p>
+     *
+     * @param query     The SPARQL query to execute.
+     * @param id        The concept ID (used for DTO construction).
+     * @param targetUri The full URI of the concept (used for DTO construction).
+     * @return An Optional containing the populated ConceptDTO, or empty if no results found.
+     */
     private Optional<ConceptDTO> executeConceptQuery(Query query, String id, String targetUri) {
         try (QueryExecution qexec = QueryExecutionFactory.create(query, dataset)) {
             ResultSet rs = qexec.execSelect();
