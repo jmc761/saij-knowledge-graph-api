@@ -1,9 +1,11 @@
 package org.jcerdeira.saijknowledgegraphapi.service;
 
 import org.jcerdeira.saijknowledgegraphapi.model.ConceptDTO;
+import org.jcerdeira.saijknowledgegraphapi.model.ConceptReference;
 import org.jcerdeira.saijknowledgegraphapi.repository.KnowledgeGraphRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,5 +31,14 @@ public class KnowledgeGraphService {
      */
     public Optional<ConceptDTO> getConceptById(String id) {
         return repository.getConceptById(id);
+    }
+
+    /**
+     * Retrieves the top-level terms (concepts with no broader concept).
+     *
+     * @return A list of ConceptReference objects representing the top terms.
+     */
+    public List<ConceptReference> fetchTopTerms() {
+        return repository.fetchTopTerms();
     }
 }

@@ -73,4 +73,23 @@ public class ConceptMapper {
         }
         return Optional.of(new ConceptDTO(id, targetUri, label, synonyms, broader, narrower, related, source));
     }
+
+    /**
+     * Maps a SPARQL ResultSet to a list of ConceptReference objects.
+     *
+     * @param rs The Jena ResultSet obtained from the SPARQL query.
+     * @return A list of ConceptReference objects.
+     */
+    public List<ConceptReference> mapToConceptReferenceList(ResultSet rs) {
+        List<ConceptReference> references = new ArrayList<>();
+        while (rs.hasNext()) {
+            QuerySolution soln = rs.nextSolution();
+            if (soln.contains("uri") && soln.contains("label")) {
+                String uri = soln.getResource("uri").getURI();
+                String label = soln.getLiteral("label").getString();
+                references.add(new ConceptReference(uri, label));
+            }
+        }
+        return references;
+    }
 }

@@ -1,12 +1,15 @@
 package org.jcerdeira.saijknowledgegraphapi.controller;
 
 import org.jcerdeira.saijknowledgegraphapi.model.ConceptDTO;
+import org.jcerdeira.saijknowledgegraphapi.model.ConceptReference;
 import org.jcerdeira.saijknowledgegraphapi.service.KnowledgeGraphService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * REST Controller for exposing Knowledge Graph operations.
@@ -46,5 +49,16 @@ public class KnowledgeGraphController {
         return knowledgeGraphService.getConceptById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Retrieves the top-level terms (concepts with no broader concept).
+     *
+     * @return A ResponseEntity containing a list of ConceptReference objects representing the top terms.
+     */
+    @GetMapping("/top-terms")
+    public ResponseEntity<List<ConceptReference>> getTopTerms() {
+        List<ConceptReference> topTerms = knowledgeGraphService.fetchTopTerms();
+        return ResponseEntity.ok(topTerms);
     }
 }

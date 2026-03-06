@@ -4,10 +4,12 @@ import lombok.Getter;
 import org.apache.jena.query.*;
 import org.apache.jena.tdb2.TDB2Factory;
 import org.jcerdeira.saijknowledgegraphapi.model.ConceptDTO;
+import org.jcerdeira.saijknowledgegraphapi.model.ConceptReference;
 import org.jcerdeira.saijknowledgegraphapi.mapper.ConceptMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -57,6 +59,22 @@ public class KnowledgeGraphRepository {
         return dataset.calculateRead(() -> {
             try (QueryExecution qexec = QueryExecutionFactory.create(pss.asQuery(), dataset)) {
                 return mapper.mapToConceptDTO(qexec.execSelect(), id, targetUri);
+            }
+        });
+    }
+
+    /**
+     * Retrieves the top-level terms (concepts with no broader concept).
+     *
+     * @return A list of ConceptReference objects representing the top terms.
+     */
+    public List<ConceptReference> fetchTopTerms() {
+        ParameterizedSparqlString pss = new ParameterizedSparqlString();
+        pss.setCommandText(GraphQueries.FIND_TOP_TERMS);
+
+        return dataset.calculateRead(() -> {
+            try (QueryExecution qexec = QueryExecutionFactory.create(pss.asQuery(), dataset)) {
+                return mapper.mapToConceptReferenceList(qexec.execSelect());
             }
         });
     }

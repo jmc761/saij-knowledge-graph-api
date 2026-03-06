@@ -29,4 +29,13 @@ public final class GraphQueries {
               OPTIONAL { ?targetUri skos:exactMatch ?source }
             }
             """;
+
+    public static final String FIND_TOP_TERMS = """
+            PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+            SELECT ?uri ?label WHERE {
+              ?uri a skos:Concept .
+              ?uri skos:prefLabel ?label .
+              FILTER NOT EXISTS { ?uri skos:broader ?broader }
+            }
+            """;
 }
