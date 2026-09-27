@@ -1,0 +1,158 @@
+{
+  "info": {
+    "name": "SAIJ Knowledge Graph API",
+    "description": "Requests and smoke tests for the SAIJ Knowledge Graph API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get top terms",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/concepts/top-terms",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "concepts",
+            "top-terms"
+          ]
+        },
+        "description": "List the top-level concepts in the graph."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns 200 OK', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns a non-empty list of concept references', function () {",
+              "  const terms = pm.response.json();",
+              "  pm.expect(terms).to.be.an('array').that.is.not.empty;",
+              "  pm.expect(terms[0].uri).to.be.a('string');",
+              "  pm.expect(terms[0].label).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get concept by ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/concepts/{{conceptId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "concepts",
+            "{{conceptId}}"
+          ]
+        },
+        "description": "Retrieve a concept and its relationships. Change conceptId to inspect another concept."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns 200 OK', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns the requested concept', function () {",
+              "  const concept = pm.response.json();",
+              "  pm.expect(concept.id).to.eql(pm.collectionVariables.get('conceptId'));",
+              "  pm.expect(concept.uri).to.be.a('string');",
+              "  pm.expect(concept.label).to.be.a('string');",
+              "  pm.expect(concept.synonyms).to.be.an('array');",
+              "  pm.expect(concept.narrower).to.be.an('array');",
+              "  pm.expect(concept.related).to.be.an('array');",
+              "  pm.expect(concept.sourceUri).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get missing concept",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/concepts/{{missingConceptId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "concepts",
+            "{{missingConceptId}}"
+          ]
+        },
+        "description": "Verify that an unknown concept returns 404."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Returns 404 Not Found', function () {",
+              "  pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "conceptId",
+      "value": "779",
+      "type": "string"
+    },
+    {
+      "key": "missingConceptId",
+      "value": "does-not-exist",
+      "type": "string"
+    }
+  ]
+}
