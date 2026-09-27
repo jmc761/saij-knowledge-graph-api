@@ -1,0 +1,11 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - graph-data:/app/data-storage
+    restart: unless-stopped
+
+volumes:
+  graph-data:
