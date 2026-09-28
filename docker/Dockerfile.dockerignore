@@ -1,0 +1,9 @@
+.git
+.vscode
+api/.mvn
+api/target
+api/data-storage
+api/mvnw
+api/mvnw.cmd
+README.md
+postman

@@ -1,6 +1,10 @@
+name: saij-knowledge-graph-api
+
 services:
   api:
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     ports:
       - "8080:8080"
     volumes:
