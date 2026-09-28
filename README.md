@@ -20,7 +20,9 @@ On first startup, the API loads the bundled RDF file. Docker stores the graph in
 
 ## Test with Postman
 
-Import the [Postman collection](postman/saij-knowledge-graph-api.postman_collection.json), then send individual requests or run the collection. It covers top terms, a concept lookup, and a missing concept. The collection variables default to `http://localhost:8080` and concept ID `779`; change them in Postman as needed. Keep credentials and other secrets out of the committed collection.
+Import the [collection](postman/saij-knowledge-graph-api.postman_collection.json) and [local environment](postman/saij-local.postman_environment.json) into Postman. Select **SAIJ Knowledge Graph API - Local**, then send requests or run the collection. The environment points to `http://localhost:8080` and uses concept ID `779` by default. The collection also works without an environment using its own defaults.
+
+Keep credentials and other secrets out of committed Postman files.
 
 ## Manage the service
 

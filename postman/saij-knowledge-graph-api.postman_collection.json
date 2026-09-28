@@ -86,7 +86,7 @@
               "",
               "pm.test('Returns the requested concept', function () {",
               "  const concept = pm.response.json();",
-              "  pm.expect(concept.id).to.eql(pm.collectionVariables.get('conceptId'));",
+              "  pm.expect(concept.id).to.eql(pm.variables.get('conceptId'));",
               "  pm.expect(concept.uri).to.be.a('string');",
               "  pm.expect(concept.label).to.be.a('string');",
               "  pm.expect(concept.synonyms).to.be.an('array');",
